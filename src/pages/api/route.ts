@@ -8,7 +8,7 @@ const options = {
   body: JSON.stringify({
     parent_author_fid: 3,
     text: "test cast qcast",
-    signer_uuid: process.env.SIGNER_UUID,
+    signer_uuid: user?.signer_uuid,
   }),
 };
 
