@@ -22,7 +22,7 @@ export default function RootLayout({
     <html lang="en">
       <NeynarContextProvider
         settings={{
-          clientId: process.env.NEXT_PUBLIC_NEYNAR_CLIENT_ID || "",
+          clientId: process.env.NEYNAR_CLIENT_ID || "",
           defaultTheme: Theme.Light,
           eventsCallbacks: {
             onAuthSuccess: () => {},
