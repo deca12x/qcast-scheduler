@@ -2,14 +2,31 @@
 
 import { NeynarAuthButton, useNeynarContext } from "@neynar/react";
 import Image from "next/image";
-import { useNeynarPost } from "../pages//api/route";
+// import { useNeynarPost } from "../pages//api/route";
+import { useEffect } from "react";
 
 export default function Home() {
   const { user } = useNeynarContext();
-  const { response, error, loading, postToNeynar } = useNeynarPost();
-  const handlePost = () => {
-    postToNeynar(user?.signer_uuid);
-  };
+  // const { response, error, loading, postToNeynar } = useNeynarPost();
+  // const handlePost = () => {
+  //   postToNeynar(user?.signer_uuid);
+  // };
+
+  useEffect(() => {
+    if (user) {
+      // Send user information to the API endpoint
+      fetch("/api/route", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ user }),
+      })
+        .then((response) => response.json())
+        .then((data) => console.log(data))
+        .catch((error) => console.error("Error:", error));
+    }
+  }, [user]);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
