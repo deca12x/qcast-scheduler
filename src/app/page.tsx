@@ -2,15 +2,10 @@
 
 import { NeynarAuthButton, useNeynarContext } from "@neynar/react";
 import Image from "next/image";
-// import { useNeynarPost } from "../pages//api/route";
 import { useEffect } from "react";
 
 export default function Home() {
   const { user } = useNeynarContext();
-  // const { response, error, loading, postToNeynar } = useNeynarPost();
-  // const handlePost = () => {
-  //   postToNeynar(user?.signer_uuid);
-  // };
 
   useEffect(() => {
     if (user) {
@@ -84,7 +79,6 @@ export default function Home() {
                 )}
                 <p className="text-lg font-semibold">{user?.display_name}</p>
                 <p className="text-lg font-semibold">{user?.fid}</p>
-                <p className="text-lg font-semibold">{user?.signer_uuid}</p>
               </div>
             </div>
           </>

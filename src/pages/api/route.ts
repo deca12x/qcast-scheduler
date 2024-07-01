@@ -1,9 +1,33 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import Cors from "cors";
+
+const cors = Cors({
+  methods: ["POST", "GET", "HEAD"],
+});
+
+function runMiddleware(
+  req: NextApiRequest,
+  res: NextApiResponse,
+  fn: Function
+) {
+  return new Promise((resolve, reject) => {
+    fn(req, res, (result: any) => {
+      if (result instanceof Error) {
+        return reject(result);
+      }
+
+      return resolve(result);
+    });
+  });
+}
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  // cors middleware needed to call the API from the client
+  await runMiddleware(req, res, cors);
+
   if (req.method === "POST") {
     const { user } = req.body;
 
@@ -20,7 +44,7 @@ export default async function handler(
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        parent_author_fid: 3,
+        parent_author_fid: 410626,
         text: "test cast qcast",
         signer_uuid: user.signer_uuid,
       }),
