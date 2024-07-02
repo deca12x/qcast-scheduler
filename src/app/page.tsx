@@ -2,15 +2,32 @@
 
 import { NeynarAuthButton, useNeynarContext } from "@neynar/react";
 import Image from "next/image";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 
 export default function Home() {
   const { user } = useNeynarContext();
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    // console.log(user);
+  // useEffect(() => {
+  //   // console.log(user);
+  //   if (user) {
+  //     // Send user information to the API endpoint
+  //     fetch("/api/route", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({ user }),
+  //     })
+  //       .then((response) => response.json())
+  //       .then((data) => console.log(data))
+  //       .catch((error) => console.error("Error:", error));
+  //   }
+  // }, [user]);
+
+  const handleCastClick = () => {
     if (user) {
-      // Send user information to the API endpoint
+      setIsLoading(true);
       fetch("/api/route", {
         method: "POST",
         headers: {
@@ -19,10 +36,18 @@ export default function Home() {
         body: JSON.stringify({ user }),
       })
         .then((response) => response.json())
-        .then((data) => console.log(data))
-        .catch((error) => console.error("Error:", error));
+        .then((data) => {
+          console.log(data);
+          setIsLoading(false);
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+          setIsLoading(false);
+        });
+    } else {
+      console.error("User is not authenticated");
     }
-  }, [user]);
+  };
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
@@ -80,6 +105,13 @@ export default function Home() {
                 <p className="text-lg font-semibold">{user?.display_name}</p>
                 <p className="text-lg font-semibold">{user?.fid}</p>
               </div>
+              <button
+                onClick={handleCastClick}
+                className="bg-blue-500 text-white px-4 py-2 rounded-md"
+                disabled={isLoading}
+              >
+                {isLoading ? "Posting..." : "Post Cast"}
+              </button>
             </div>
           </>
         )}
@@ -97,7 +129,7 @@ export default function Home() {
             </span>
           </h2>
           <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            App built with Next.js and Neynar
+            q your casts
           </p>
         </a>
       </div>
