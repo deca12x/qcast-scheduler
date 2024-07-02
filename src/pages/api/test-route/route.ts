@@ -1,27 +1,10 @@
 import { NextApiRequest, NextApiResponse } from "next";
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method === "GET") {
-    res.status(200).json({ message: "Hello World!" });
-  } else {
-    res.setHeader("Allow", ["GET"]);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
+export default function postTest(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method === "POST") {
+    // const { fid, display_name } = req.body;
+    const { cast, image } = req.body; // Extracting the fields directly
+    // const fid = user.fid;
+    return res.status(200).json({ cast, image });
   }
 }
-
-// import { NextResponse } from "next/server";
-
-// export async function GET() {
-//   return NextResponse.json({
-//     message: "Hello World!",
-//   });
-// }
-
-// export default async function handler(
-//   req: NextApiRequest,
-//   res: NextApiResponse
-// ) {
-//   return NextApiResponse.json({
-
-//   })
-// }
