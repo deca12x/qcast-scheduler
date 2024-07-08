@@ -2,30 +2,27 @@
 
 import { NeynarAuthButton, useNeynarContext } from "@neynar/react";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function Home() {
   const { user } = useNeynarContext();
   const [isLoading, setIsLoading] = useState(false);
-
-  // useEffect(() => {
-  //   // console.log(user);
-  //   if (user) {
-  //     // Send user information to the API endpoint
-  //     fetch("/api/route", {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify({ user }),
-  //     })
-  //       .then((response) => response.json())
-  //       .then((data) => console.log(data))
-  //       .catch((error) => console.error("Error:", error));
-  //   }
-  // }, [user]);
+  const [url, setUrl] = useState("");
+  const [urlError, setUrlError] = useState("");
 
   const handleCastClick = () => {
+    const urlPattern =
+      /^(https?:\/\/)?([a-zA-Z0-9.-]+)\.([a-zA-Z]{2,})(\/\S*)?$/;
+
+    if (url && !urlPattern.test(url)) {
+      setUrlError("Invalid URL format");
+      return;
+    }
+
+    setUrlError("");
+
+    const postUrl = url || ""; // Set the URL to an empty string if not provided
+
     if (user) {
       setIsLoading(true);
       fetch("/api/route", {
@@ -33,7 +30,7 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ user }),
+        body: JSON.stringify({ user, url: postUrl }),
       })
         .then((response) => response.json())
         .then((data) => {
@@ -52,7 +49,7 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
       <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
+        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
           qcast
         </p>
         <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
@@ -105,6 +102,14 @@ export default function Home() {
                 <p className="text-lg font-semibold">{user?.display_name}</p>
                 <p className="text-lg font-semibold">{user?.fid}</p>
               </div>
+              <input
+                type="text"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="Enter URL"
+                className="border rounded-md px-2 py-1"
+              />
+              {urlError && <p className="text-red-500">{urlError}</p>}
               <button
                 onClick={handleCastClick}
                 className="bg-blue-500 text-white px-4 py-2 rounded-md"
