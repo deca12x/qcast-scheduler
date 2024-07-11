@@ -1,30 +1,36 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-// import formidable from "formidable";
-// import fs from "fs";
-// import FormData from "form-data";
-// const pinataSDK = require("@pinata/sdk");
-// const pinata = new pinataSDK({ pinataJWTKey: process.env.PINATA_JWT });
+import formidable from "formidable"; // Library to handle form data, especially file uploads
+import fs from "fs"; // File system module to work with file streams
+import FormData from "form-data"; // Library to create form data for HTTP requests
+const pinataSDK = require("@pinata/sdk"); // Pinata SDK to interact with Pinata API
+const pinata = new pinataSDK({ pinataJWTKey: process.env.PINATA_JWT }); // Initialize Pinata with JWT key from environment variables
+
+export const config = {
+  api: {
+    bodyParser: false, // Disable body parser to handle form data manually
+  },
+};
 
 // for uploading images to IPFS
-// const keyRestrictions = {
-//   keyName: "Signed Upload JWT",
-//   maxUses: 1,
-//   permissions: {
-//     endpoints: {
-//       data: {
-//         pinList: false,
-//         userPinnedDataTotal: false,
-//       },
-//       pinning: {
-//         pinFileToIPFS: true,
-//         pinJSONToIPFS: false,
-//         pinJobs: false,
-//         unpin: false,
-//         userPinPolicy: false,
-//       },
-//     },
-//   },
-// };
+const keyRestrictions = {
+  keyName: "Signed Upload JWT",
+  maxUses: 1,
+  permissions: {
+    endpoints: {
+      data: {
+        pinList: false,
+        userPinnedDataTotal: false,
+      },
+      pinning: {
+        pinFileToIPFS: true,
+        pinJSONToIPFS: false,
+        pinJobs: false,
+        unpin: false,
+        userPinPolicy: false,
+      },
+    },
+  },
+};
 
 // receive user information from client (first POST request)
 // if it receives first post and has a uuid, send to Neynar API (second POST request)
