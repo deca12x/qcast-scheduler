@@ -2,28 +2,14 @@
 
 import { NeynarAuthButton, useNeynarContext } from "@neynar/react";
 import Image from "next/image";
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 
 export default function Home() {
   const { user } = useNeynarContext();
   const [isLoading, setIsLoading] = useState(false);
-  // const [url, setUrl] = useState("");
-  // const [urlError, setUrlError] = useState("");
   const inputFile = useRef<HTMLInputElement>(null);
 
   const handleCastClick = async () => {
-    // const urlPattern =
-    //   /^(https?:\/\/)?([a-zA-Z0-9.-]+)\.([a-zA-Z]{2,})(\/\S*)?$/;
-
-    // if (url && !urlPattern.test(url)) {
-    //   setUrlError("Invalid URL format");
-    //   return;
-    // }
-
-    // setUrlError("");
-
-    // const postUrl = url || ""; // Set the URL to an empty string if not provided
-
     if (user) {
       setIsLoading(true);
 
@@ -37,9 +23,6 @@ export default function Home() {
       try {
         const res = await fetch("/api/route", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
           body: formData,
         });
         const data = await res.json();
