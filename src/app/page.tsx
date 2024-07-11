@@ -2,45 +2,36 @@
 
 import { NeynarAuthButton, useNeynarContext } from "@neynar/react";
 import Image from "next/image";
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 
 export default function Home() {
   const { user } = useNeynarContext();
   const [isLoading, setIsLoading] = useState(false);
-  const [url, setUrl] = useState("");
-  const [urlError, setUrlError] = useState("");
+  const inputFile = useRef<HTMLInputElement>(null);
 
-  const handleCastClick = () => {
-    const urlPattern =
-      /^(https?:\/\/)?([a-zA-Z0-9.-]+)\.([a-zA-Z]{2,})(\/\S*)?$/;
-
-    if (url && !urlPattern.test(url)) {
-      setUrlError("Invalid URL format");
-      return;
-    }
-
-    setUrlError("");
-
-    const postUrl = url || ""; // Set the URL to an empty string if not provided
-
+  const handleCastClick = async () => {
     if (user) {
       setIsLoading(true);
-      fetch("/api/route", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ user, url: postUrl }),
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          console.log(data);
-          setIsLoading(false);
-        })
-        .catch((error) => {
-          console.error("Error:", error);
-          setIsLoading(false);
+
+      const file = inputFile.current?.files?.[0];
+      const formData = new FormData();
+      formData.append("user", JSON.stringify(user));
+      if (file) {
+        formData.append("file", file);
+      }
+
+      try {
+        const res = await fetch("/api/route", {
+          method: "POST",
+          body: formData,
         });
+        const data = await res.json();
+        console.log(data);
+      } catch (error) {
+        console.error("Error:", error);
+      } finally {
+        setIsLoading(false);
+      }
     } else {
       console.error("User is not authenticated");
     }
@@ -102,14 +93,7 @@ export default function Home() {
                 <p className="text-lg font-semibold">{user?.display_name}</p>
                 <p className="text-lg font-semibold">{user?.fid}</p>
               </div>
-              <input
-                type="text"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="Enter URL"
-                className="border rounded-md px-2 py-1"
-              />
-              {urlError && <p className="text-red-500">{urlError}</p>}
+              <input type="file" ref={inputFile} />
               <button
                 onClick={handleCastClick}
                 className="bg-blue-500 text-white px-4 py-2 rounded-md"
