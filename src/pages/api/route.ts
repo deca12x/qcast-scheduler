@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import formidable from "formidable"; // Library to handle form data, especially file uploads
+import formidable, { Fields, Files } from "formidable"; // Import required types
 import fs from "fs"; // File system module to work with file streams
 import FormData from "form-data"; // Library to create form data for HTTP requests
 const pinataSDK = require("@pinata/sdk"); // Pinata SDK to interact with Pinata API
@@ -11,111 +11,95 @@ export const config = {
   },
 };
 
-// for uploading images to IPFS
-const keyRestrictions = {
-  keyName: "Signed Upload JWT",
-  maxUses: 1,
-  permissions: {
-    endpoints: {
-      data: {
-        pinList: false,
-        userPinnedDataTotal: false,
-      },
-      pinning: {
-        pinFileToIPFS: true,
-        pinJSONToIPFS: false,
-        pinJobs: false,
-        unpin: false,
-        userPinPolicy: false,
-      },
-    },
-  },
-};
-
-// receive user information from client (first POST request)
-// if it receives first post and has a uuid, send to Neynar API (second POST request)
+// Handler for the API endpoint
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
   if (req.method === "POST") {
-    const { user, url } = req.body;
+    const form = new formidable.IncomingForm(); // Initialize formidable form
 
-    if (!user || !user.signer_uuid) {
-      res.status(400).json({ error: "User information is missing" });
-      return;
-    }
+    // Parse the incoming form data (which includes files and fields)
+    form.parse(req, async (err: any, fields: Fields, files: Files) => {
+      if (err) {
+        res.status(500).json({ error: "Form parsing error" }); // Handle form parsing errors
+        return;
+      }
 
-    // try {
-    //   const uploadImageOptions = {
-    //     method: "POST",
-    //     headers: {
-    //       accept: "application/json",
-    //       "content-type": "application/json",
-    //       authorization: `Bearer ${process.env.PINATA_JWT}`,
-    //     },
-    //     body: JSON.stringify(keyRestrictions),
-    //   };
+      const userField = fields.user as string | string[]; // Get the user field
+      const user = Array.isArray(userField)
+        ? JSON.parse(userField[0])
+        : JSON.parse(userField); // Parse the user information from the form fields
+      let imageUrl = ""; // Initialize image URL variable
 
-    //   const jwtRepsonse = await fetch(
-    //     "https://api.pinata.cloud/users/generateApiKey",
-    //     uploadImageOptions
-    //   );
-    //   const json = await jwtRepsonse.json();
-    //   const { JWT } = json;
-    //   res.send(JWT);
-    // } catch (e) {
-    //   console.log(e);
-    //   res.status(500).send("Server Error");
-    // }
+      if (!user || !user.signer_uuid) {
+        res.status(400).json({ error: "User information is missing" }); // Handle missing user information
+        return;
+      }
 
-    const imageUrlStatic = "https://i.imgur.com/cniMfvm.jpeg"; // Replace this with your dynamic URL if needed
+      // Check if a file was uploaded
+      const fileArray = files.file as formidable.File | formidable.File[]; // Get the uploaded file
+      const file = Array.isArray(fileArray) ? fileArray[0] : fileArray;
 
-    let castOptions = {};
+      if (file) {
+        const formData = new FormData(); // Initialize form data
+        formData.append("file", fs.createReadStream(file.filepath)); // Append the file to the form data
 
-    if (url == "") {
-      castOptions = {
+        try {
+          // Make a request to Pinata to upload the file to IPFS
+          const response = await fetch(
+            "https://api.pinata.cloud/pinning/pinFileToIPFS",
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${process.env.PINATA_JWT}`, // Authorization header with JWT token
+              },
+              body: formData as unknown as BodyInit, // Set the form data as the request body
+            }
+          );
+
+          const json = await response.json(); // Parse the response JSON
+          const { IpfsHash } = json; // Get the IPFS hash from the response
+          imageUrl = `https://gateway.pinata.cloud/ipfs/${IpfsHash}`; // Construct the image URL using the IPFS hash
+        } catch (error) {
+          console.error(error); // Log the error for debugging
+          res.status(500).json({ error: "Failed to upload image to IPFS" }); // Respond with an error if the upload fails
+          return;
+        }
+      }
+
+      // Prepare the options for the Farcaster API request
+      const castOptions = {
         method: "POST",
         headers: {
-          accept: "application/json",
-          api_key: process.env.NEYNAR_API_KEY || "",
-          "content-type": "application/json",
+          accept: "application/json", // Accept JSON response
+          api_key: process.env.NEYNAR_API_KEY || "", // Neynar API key from environment variables
+          "content-type": "application/json", // Content type of the request
         },
         body: JSON.stringify({
-          parent_author_fid: 410626,
-          text: "urbe houz 🇧🇪 cast from script with no pic",
-          signer_uuid: user.signer_uuid,
+          parent_author_fid: 410626, // Example parent author FID
+          text: `urbe houz 🇧🇪 cast from script ${
+            imageUrl ? "with pic" : "with no pic"
+          }`, // Example text for the cast
+          signer_uuid: user.signer_uuid, // Signer UUID from the user information
+          embeds: imageUrl ? [{ url: imageUrl }] : [], // Include the image URL in embeds if available
         }),
       };
-    } else {
-      castOptions = {
-        method: "POST",
-        headers: {
-          accept: "application/json",
-          api_key: process.env.NEYNAR_API_KEY || "",
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          parent_author_fid: 410626,
-          text: "urbe houz 🇧🇪 cast from script with pic",
-          signer_uuid: user.signer_uuid,
-          embeds: [{ url: url }],
-        }),
-      };
-    }
 
-    try {
-      const response = await fetch(
-        "https://api.neynar.com/v2/farcaster/cast",
-        castOptions
-      );
-      const data = await response.json();
-      res.status(200).json(data);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Internal server error" });
-    }
+      try {
+        // Make a request to Neynar API to post the cast
+        const response = await fetch(
+          "https://api.neynar.com/v2/farcaster/cast",
+          castOptions
+        );
+        const data = await response.json(); // Parse the response JSON
+        res.status(200).json(data); // Respond with the data from the Neynar API
+      } catch (error) {
+        console.error(error); // Log the error for debugging
+        res.status(500).json({ error: "Internal server error" }); // Respond with an internal server error
+      }
+    });
   } else {
-    res.status(405).json({ error: "Method not allowed" });
+    res.status(405).json({ error: "Method not allowed" }); // Respond with method not allowed for non-POST requests
   }
 }
